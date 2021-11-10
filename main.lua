@@ -2,6 +2,8 @@
 
 local w, h = term.getSize(2)
 
+local SCALE = jit and 1 or 4
+
 local world = {}
 
 do
@@ -38,8 +40,8 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
   local mapY = math.floor(posY + 0.5)
   local mapZ = math.floor(posZ + 0.5)
   
-  local cameraX = 2 * x / w - 1
-  local cameraZ = 2 * y / h - 1
+  local cameraX = 2 * x / math.floor(w/SCALE) - 1
+  local cameraZ = 2 * y / math.floor(h/SCALE) - 1
   local rayDirX = dx + planeX * cameraX
   local rayDirY = dy + planeY * cameraX
   local rayDirZ = dz + planeZ * cameraZ
@@ -117,7 +119,9 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
     if hit == 0xf then color = 0xf end
     if color > 0xf then color = color - 0xf end
 
-    drawBuf[y] = drawBuf[y] .. string.char(color)
+    for i=1, SCALE, 1 do
+      drawBuf[y*SCALE+i-1] = drawBuf[y*SCALE+i-1] .. string.char(color):rep(SCALE)
+    end
   end
 
   return perpWallDist, hit
@@ -129,8 +133,8 @@ local oldtime, time = 0
 while true do
   for i=0, h, 1 do drawBuf[i] = "" end
 
-  for y = 0, h, 1 do
-    for x = 0, w, 1 do
+  for y = 0, math.floor(h/SCALE), 1 do
+    for x = 0, math.floor(w/SCALE), 1 do
       castRay(x, y, dirX, dirY, dirZ, drawBuf)
     end
   end
