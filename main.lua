@@ -29,9 +29,9 @@ do
 end
 
 -- x = forward/backward, y=left/right, z=up/down
-local posX, posY, posZ = 5, 5, 3
-local dirX, dirY, dirZ = -1, 0, 0
-local planeX, planeY, planeZ = 0, 0.90, 0.90
+local posX, posY, posZ = 5.3, 5, 3
+local dirX, dirY, dirZ = 1, 0, 0
+local planeX, planeY, planeZ = 0, 0.9, 0.9
 
 local function castRay(x,y,dx,dy,dz,drawBuf)
   local mapX = math.floor(posX + 0.5)
@@ -137,36 +137,17 @@ while true do
   oldTime = time or 0
   time = os.epoch("utc")
   local frametime = (time - oldTime) / 1000
-  moveSpeed = frametime
-  rotSpeed = frametime / 8
+  moveSpeed = frametime / 7
+  rotSpeed = frametime / 2
   term.drawPixels(0, 0, drawBuf)
 
   os.sleep(0.05)
 
-  -- [[
-  -- rotate right
   local oldDirX = dirX
   dirX = dirX * math.cos(-rotSpeed) - dirY * math.sin(-rotSpeed)
   dirY = oldDirX * math.sin(-rotSpeed) + dirY * math.cos(-rotSpeed)
   local oldPlaneX = planeX
   planeX = planeX * math.cos(-rotSpeed) - planeY * math.sin(-rotSpeed)
   planeY = oldPlaneX * math.sin(-rotSpeed) + planeY * math.cos(-rotSpeed)
-  --]]
-  -- move backwards
-  --posX = posX - dirX * moveSpeed
-  --posY = posY - dirY * moveSpeed
-  --posZ = posZ - dirZ * moveSpeed
-
-  -- move up
-  --posZ = posZ + moveSpeed
-
-  --[[ rotate down
-  local oldDirX = dirX
-  local oldPlaneX = planeX
-  dirX = dirX * math.cos(-rotSpeed) - dirZ * math.sin(-rotSpeed)
-  dirZ = oldDirX * -math.cos(-rotSpeed) + dirZ * math.cos(-rotSpeed)
-  planeX = planeX * math.cos(-rotSpeed) - dirZ * math.sin(-rotSpeed)
-  planeZ = oldPlaneX * -math.cos(-rotSpeed) + dirZ * math.cos(-rotSpeed)
-  --]]
 end
 term.setGraphicsMode(0)
