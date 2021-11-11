@@ -33,7 +33,7 @@ end
 -- x = forward/backward, y=left/right, z=up/down
 local posX, posY, posZ = 5.3, 5, 3
 local dirX, dirY, dirZ = 1, 0, 0
-local planeX, planeY, planeZ = 0, 0.9, 0.9
+local planeX, planeY, planeZ = 0, 0.66, 0.66
 
 local function castRay(x,y,dx,dy,dz,drawBuf)
   local mapX = math.floor(posX + 0.5)
@@ -127,9 +127,13 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
   return perpWallDist, hit
 end
 
+local pressed = {}
+local moveZ = 0
+
 term.setGraphicsMode(2)
 local drawBuf = {}
 local oldtime, time = 0
+local lastTimerID
 while true do
   for i=0, h, 1 do drawBuf[i] = "" end
 
@@ -138,20 +142,114 @@ while true do
       castRay(x, y, dirX, dirY, dirZ, drawBuf)
     end
   end
-  oldTime = time or 0
+  oldTime = time or os.epoch("utc")
   time = os.epoch("utc")
   local frametime = (time - oldTime) / 1000
-  moveSpeed = frametime / 7
-  rotSpeed = frametime / 2
+  moveSpeed = frametime * 7
+  rotSpeed = frametime * 3
   term.drawPixels(0, 0, drawBuf)
 
-  os.sleep(0.05)
+  --os.sleep(0.01)
+  if not lastTimerID then
+    lastTimerID = os.startTimer(0)
+  end
+  local sig, code, rep = os.pullEventRaw()
+  if sig == "terminate" then break end
+  if sig == "timer" and code == lastTimerID then
+    lastTimerID = nil
+  elseif sig == "key" and not rep then
+    pressed[code] = true
+  elseif sig == "key_up" then
+    pressed[code] = false
+  end
 
-  local oldDirX = dirX
-  dirX = dirX * math.cos(-rotSpeed) - dirY * math.sin(-rotSpeed)
-  dirY = oldDirX * math.sin(-rotSpeed) + dirY * math.cos(-rotSpeed)
-  local oldPlaneX = planeX
-  planeX = planeX * math.cos(-rotSpeed) - planeY * math.sin(-rotSpeed)
-  planeY = oldPlaneX * math.sin(-rotSpeed) + planeY * math.cos(-rotSpeed)
+  local distZ, tile = castRay(math.floor(w*0.5), math.floor(h*0.5), 0, 0, 1)
+  local pdistZ, _tile = castRay(math.floor(w*0.5), math.floor(h*0.5), 0, 0, -1)
+  local oldMoveZ = moveZ
+  if distZ <= 1/SCALE and moveZ < 0 and tile ~= 0xf then
+    if pressed[keys.space] then
+      moveZ = 0.2
+    else
+      moveZ = 0
+    end
+  elseif pdistZ <= 1/SCALE and moveZ > 0 and _tile ~= 0xf then
+    moveZ = 0
+  elseif distZ > 1 then
+    moveZ = math.max(-0.1, moveZ - 0.01*SCALE) --moveZ - moveSpeed
+  elseif pressed[keys.space] then
+    moveZ = 0.2
+  end
+  posZ = posZ - moveZ
+
+  if pressed[keys.w] then
+    local nposX = posX + dirX * moveSpeed
+    local nposY = posY + dirY * moveSpeed
+    local dist = math.min(
+      castRay(math.floor(w * 0.5), math.floor(h * 0.5), dirX, dirY, 0),
+      castRay(math.floor(w * 0.75), math.floor(h * 0.5), dirX, dirY, 0),
+      castRay(math.floor(w * 0.25), math.floor(h * 0.5), dirX, dirY, 0))
+    if dist > 0.8 then
+      posX, posY = nposX, nposY
+    end
+  end
+  if pressed[keys.s] then
+    local nposX = posX - dirX * moveSpeed
+    local nposY = posY - dirY * moveSpeed
+    local dist = math.min(
+      castRay(math.floor(w * 0.5), math.floor(h * 0.5), -dirX, -dirY, 0),
+      castRay(math.floor(w * 0.75), math.floor(h * 0.5), -dirX, -dirY, 0),
+      castRay(math.floor(w * 0.25), math.floor(h * 0.5), -dirX, -dirY, 0))
+    if dist > 0.8 then
+      posX, posY = nposX, nposY
+    end
+  end
+  --[[
+  if pressed[keys.a] then
+    local _dirX = dirX * math.cos(-90) - dirY * math.sin(-90)
+    local _dirY = dirX * math.sin(-90) + dirY * math.cos(-90)
+
+    local nposX = posX + _dirX * moveSpeed
+    local nposY = posY + _dirY * moveSpeed
+    
+    local dist = math.min(
+      castRay(math.floor(w * 0.5), math.floor(h * 0.5), -_dirX, _dirY, 0),
+      castRay(math.floor(w * 0.75), math.floor(h * 0.5), -_dirX, _dirY, 0),
+      castRay(math.floor(w * 0.25), math.floor(h * 0.5), -_dirX, _dirY, 0))
+    if dist >= 0.8 then
+      posX, posY = nposX, nposY
+    end
+  end
+  if pressed[keys.d] then
+    local _dirX = dirX * math.cos(90) - dirY * math.sin(90)
+    local _dirY = dirX * math.sin(90) + dirY * math.cos(90)
+
+    local nposX = posX - _dirX * moveSpeed
+    local nposY = posY - _dirY * moveSpeed
+    
+    local dist = math.min(
+      castRay(math.floor(w * 0.5), math.floor(h * 0.5), -_dirX, -_dirY, 0),
+      castRay(math.floor(w * 0.75), math.floor(h * 0.5), -_dirX, -_dirY, 0),
+      castRay(math.floor(w * 0.25), math.floor(h * 0.5), -_dirX, -_dirY, 0))
+    if dist >= 0.8 then
+      posX, posY = nposX, nposY
+    end
+  end
+  --]]
+  if pressed[keys.left] then
+    local oldDirX = dirX
+    dirX = dirX * math.cos(-rotSpeed) - dirY * math.sin(-rotSpeed)
+    dirY = oldDirX * math.sin(-rotSpeed) + dirY * math.cos(-rotSpeed)
+    local oldPlaneX = planeX
+    planeX = planeX * math.cos(-rotSpeed) - planeY * math.sin(-rotSpeed)
+    planeY = oldPlaneX * math.sin(-rotSpeed) + planeY * math.cos(-rotSpeed)
+  end
+  if pressed[keys.right] then
+    local oldDirX = dirX
+    dirX = dirX * math.cos(rotSpeed) - dirY * math.sin(rotSpeed)
+    dirY = oldDirX * math.sin(rotSpeed) + dirY * math.cos(rotSpeed)
+    local oldPlaneX = planeX
+    planeX = planeX * math.cos(rotSpeed) - planeY * math.sin(rotSpeed)
+    planeY = oldPlaneX * math.sin(rotSpeed) + planeY * math.cos(rotSpeed)
+  end
 end
 term.setGraphicsMode(0)
