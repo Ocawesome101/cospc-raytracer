@@ -5,6 +5,7 @@ local w, h = term.getSize(2)
 local texWidth, texHeight = 64, 64
 
 local SCALE = jit and 1 or 4
+w, h = math.floor(w/SCALE), math.floor(h/SCALE)
 
 local world = {}
 local textures = {}
@@ -89,8 +90,8 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
   local mapY = math.floor(posY)-- + 0.5)
   local mapZ = math.floor(posZ)-- + 0.5)
   
-  local cameraX = 2 * x / math.floor(w/SCALE) - 1
-  local cameraZ = 2 * y / math.floor(h/SCALE) - 1
+  local cameraX = 2 * x / math.floor(w) - 1
+  local cameraZ = 2 * y / math.floor(h) - 1
   local rayDirX = dx + planeX * cameraX
   local rayDirY = dy + planeY * cameraX
   local rayDirZ = dz + planeZ * cameraZ
@@ -218,10 +219,10 @@ local oldtime, time
 local lastTimerID
 local ftavg = 0
 while true do
-  for i=0, h, 1 do drawBuf[i] = "" end
+  for i=0, h*SCALE+1, 1 do drawBuf[i] = "" end
 
-  for y = 0, math.floor(h/SCALE), 1 do
-    for x = 0, math.floor(w/SCALE), 1 do
+  for y = 0, h-1, 1 do
+    for x = 0, w-1, 1 do
       castRay(x, y, dirX, dirY, dirZ, drawBuf)
     end
   end
@@ -250,16 +251,16 @@ while true do
   local distZ, tile = castRay(math.floor(w*0.5), math.floor(h*0.5), 0, 0, 1)
   local pdistZ, _tile = castRay(math.floor(w*0.5), math.floor(h*0.5), 0, 0, -1)
   local oldMoveZ = moveZ
-  if distZ <= 1/SCALE and moveZ < 0 and tile ~= 0xf then
+  if distZ <= 1 and moveZ < 0 and tile ~= 0xf then
     if pressed[keys.space] then
       moveZ = 0.13
     else
       moveZ = 0
     end
-  elseif pdistZ <= 1/SCALE and moveZ > 0 and _tile ~= 0xf then
+  elseif pdistZ <= 1 and moveZ > 0 and _tile ~= 0xf then
     moveZ = 0
-  elseif distZ > 1/SCALE then
-    moveZ = math.max(-0.1*SCALE, moveZ - 0.0075)
+  elseif distZ > 1 then
+    moveZ = math.max(-0.1, moveZ - 0.0075)
   elseif pressed[keys.space] then
     moveZ = 0.13
   end
@@ -272,7 +273,7 @@ while true do
       castRay(math.floor(w * 0.5), math.floor(h * 0.5), dirX, dirY, 0),
       castRay(math.floor(w * 0.75), math.floor(h * 0.5), dirX, dirY, 0),
       castRay(math.floor(w * 0.25), math.floor(h * 0.5), dirX, dirY, 0))
-    if dist > 0.8/SCALE then
+    if dist > 0.8 then
       posX, posY = nposX, nposY
     end
   end
@@ -283,7 +284,7 @@ while true do
       castRay(math.floor(w * 0.5), math.floor(h * 0.5), -dirX, -dirY, 0),
       castRay(math.floor(w * 0.75), math.floor(h * 0.5), -dirX, -dirY, 0),
       castRay(math.floor(w * 0.25), math.floor(h * 0.5), -dirX, -dirY, 0))
-    if dist > 0.8/SCALE then
+    if dist > 0.8 then
       posX, posY = nposX, nposY
     end
   end
