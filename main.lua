@@ -175,7 +175,7 @@ while true do
   elseif pdistZ <= 1/SCALE and moveZ > 0 and _tile ~= 0xf then
     moveZ = 0
   elseif distZ > 1 then
-    moveZ = math.max(-0.1, moveZ - 0.01*SCALE) --moveZ - moveSpeed
+    moveZ = math.max(-0.1, moveZ - 0.0075*SCALE) --moveZ - moveSpeed
   elseif pressed[keys.space] then
     moveZ = 0.2
   end
