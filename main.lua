@@ -177,11 +177,12 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
         else wallX = posX + perpWallDist * rayDirX end
       wallY = posZ + perpWallDist * rayDirZ
 
-      local texX = math.floor(wallX*texWidth+0.5) -- math.floor(wallX * texWidth)
+      local texX = math.floor(wallX * texWidth)
       local texY = math.floor(wallY*texHeight)
       if side == 0 and rayDirX > 0 then texX = texWidth - texX - 1 end
       if side == 1 and rayDirY < 0 then texX = texWidth - texX - 1 end
-      if side == 2 and rayDirZ > 0 then texY = texWidth - texY - 1 end
+      if side == 2 and rayDirZ < 0 then texY = texHeight - texY - 1 end
+      if side == 2 and rayDirZ > 0 then texY = texHeight - texY - 1 end
 
       local texPos = texX + texY + texHeight
 
