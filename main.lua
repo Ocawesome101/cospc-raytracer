@@ -82,12 +82,12 @@ end
 -- x = forward/backward, y=left/right, z=up/down
 local posX, posY, posZ = 5.3, 5, 3
 local dirX, dirY, dirZ = 1, 0, 0
-local planeX, planeY, planeZ = 0, 0.66, 0.66
+local planeX, planeY, planeZ = 0, 0.66, 0.4
 
 local function castRay(x,y,dx,dy,dz,drawBuf)
-  local mapX = math.floor(posX + 0.5)
-  local mapY = math.floor(posY + 0.5)
-  local mapZ = math.floor(posZ + 0.5)
+  local mapX = math.floor(posX)-- + 0.5)
+  local mapY = math.floor(posY)-- + 0.5)
+  local mapZ = math.floor(posZ)-- + 0.5)
   
   local cameraX = 2 * x / math.floor(w/SCALE) - 1
   local cameraZ = 2 * y / math.floor(h/SCALE) - 1
@@ -176,15 +176,15 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
       if side == 0 then wallX = posY + perpWallDist * rayDirY
         else wallX = posX + perpWallDist * rayDirX end
       wallY = posZ + perpWallDist * rayDirZ
+      wallX = wallX - math.floor(wallX)
 
       local texX = math.floor(wallX * texWidth)
       local texY = math.floor(wallY * texHeight)
-      --if side == 0 and rayDirX > 0 then texX = texWidth - texX - 1 end
-      --if side == 1 and rayDirY < 0 then texX = texWidth - texX - 1 end
-      --if side == 2 and rayDirZ > 0 then texY = texHeight - texY - 1 end
+      if side == 0 and rayDirX > 0 then texX = texWidth - texX - 1 end
+      if side == 1 and rayDirY < 0 then texX = texWidth - texX - 1 end
+      if side == 2 and rayDirZ > 0 then texY = texHeight - texY - 1 end
       if math.abs(texX) >= texWidth then texX = texX % texWidth end
       if math.abs(texY) >= texHeight then texY = texY % texHeight end
-      --print(texX, texY)
 
       local texPos = texX + (texY * texHeight)
 
@@ -252,7 +252,7 @@ while true do
   local oldMoveZ = moveZ
   if distZ <= 1/SCALE and moveZ < 0 and tile ~= 0xf then
     if pressed[keys.space] then
-      moveZ = 0.2
+      moveZ = 0.13
     else
       moveZ = 0
     end
@@ -261,7 +261,7 @@ while true do
   elseif distZ > 1/SCALE then
     moveZ = math.max(-0.1*SCALE, moveZ - 0.0075)
   elseif pressed[keys.space] then
-    moveZ = 0.2
+    moveZ = 0.13
   end
   posZ = posZ - moveZ
 
