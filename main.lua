@@ -178,15 +178,18 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
       wallY = posZ + perpWallDist * rayDirZ
 
       local texX = math.floor(wallX * texWidth)
-      local texY = math.floor(wallY*texHeight)
-      if side == 0 and rayDirX > 0 then texX = texWidth - texX - 1 end
-      if side == 1 and rayDirY < 0 then texX = texWidth - texX - 1 end
-      if side == 2 and rayDirZ < 0 then texY = texHeight - texY - 1 end
-      if side == 2 and rayDirZ > 0 then texY = texHeight - texY - 1 end
+      local texY = math.floor(wallY * texHeight)
+      --if side == 0 and rayDirX > 0 then texX = texWidth - texX - 1 end
+      --if side == 1 and rayDirY < 0 then texX = texWidth - texX - 1 end
+      --if side == 2 and rayDirZ > 0 then texY = texHeight - texY - 1 end
+      if math.abs(texX) >= texWidth then texX = texX % texWidth end
+      if math.abs(texY) >= texHeight then texY = texY % texHeight end
+      --print(texX, texY)
 
-      local texPos = texX + texY + texHeight
+      local texPos = texX + (texY * texHeight)
 
-      color = tex[math.floor(texPos)] or math.random(1,14)
+      if side == 2 then color = 2
+        else color = tex[math.floor(texPos)] or 0 end
     end
 
     for i=1, SCALE, 1 do
@@ -211,8 +214,9 @@ loadTexture(6, "greystone.tex")
 loadTexture(7, "colorstone.tex")
 
 local drawBuf = {}
-local oldtime, time = 0
+local oldtime, time
 local lastTimerID
+local ftavg = 0
 while true do
   for i=0, h, 1 do drawBuf[i] = "" end
 
@@ -226,6 +230,7 @@ while true do
   local frametime = (time - oldTime) / 1000
   moveSpeed = frametime * 7
   rotSpeed = frametime * 3
+  ftavg = (ftavg + frametime) / (ftavg == 0 and 1 or 2)
   term.drawPixels(0, 0, drawBuf)
 
   --os.sleep(0.01)
@@ -253,8 +258,8 @@ while true do
     end
   elseif pdistZ <= 1/SCALE and moveZ > 0 and _tile ~= 0xf then
     moveZ = 0
-  elseif distZ > 1 then
-    moveZ = math.max(-0.1, moveZ - 0.0075*SCALE) --moveZ - moveSpeed
+  elseif distZ > 1/SCALE then
+    moveZ = math.max(-0.1*SCALE, moveZ - 0.0075)
   elseif pressed[keys.space] then
     moveZ = 0.2
   end
@@ -267,7 +272,7 @@ while true do
       castRay(math.floor(w * 0.5), math.floor(h * 0.5), dirX, dirY, 0),
       castRay(math.floor(w * 0.75), math.floor(h * 0.5), dirX, dirY, 0),
       castRay(math.floor(w * 0.25), math.floor(h * 0.5), dirX, dirY, 0))
-    if dist > 0.8 then
+    if dist > 0.8/SCALE then
       posX, posY = nposX, nposY
     end
   end
@@ -278,7 +283,7 @@ while true do
       castRay(math.floor(w * 0.5), math.floor(h * 0.5), -dirX, -dirY, 0),
       castRay(math.floor(w * 0.75), math.floor(h * 0.5), -dirX, -dirY, 0),
       castRay(math.floor(w * 0.25), math.floor(h * 0.5), -dirX, -dirY, 0))
-    if dist > 0.8 then
+    if dist > 0.8/SCALE then
       posX, posY = nposX, nposY
     end
   end
@@ -332,3 +337,4 @@ while true do
   end
 end
 term.setGraphicsMode(0)
+print(string.format("Average frametime: %.2fms\nAverage FPS: %.2f", ftavg*1000, 1/ftavg))
