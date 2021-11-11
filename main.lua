@@ -2,9 +2,12 @@
 
 local w, h = term.getSize(2)
 
+local texWidth, texHeight = 64, 64
+
 local SCALE = jit and 1 or 4
 
 local world = {}
+local textures = {}
 
 do
   local _world = {[0]={}}
@@ -28,6 +31,52 @@ do
   for i=#_world, 0, -1 do
     world[#_world - i] = _world[i]
   end
+end
+
+local lastSetPal = 0
+local function loadTexture(id, file)
+  textures[id] = {}
+  local tex = textures[id]
+  local n = 0
+  local handle = assert(io.open(shell.dir().."/textures/"..file))
+  local palConv = {}
+  local palLen = handle:read(1):byte()
+  local r = 0
+  local eq = 0
+  while r < palLen do
+    r = r + 4
+    local colID = handle:read(1):byte()
+    local rgb = string.unpack("<I3", handle:read(3))
+    for i=0, lastSetPal, 1 do
+      local mr, mg, mb = term.getPaletteColor(i)
+      mr, mg, mb = mr * 255, mg * 255, mb * 255
+      local r, g, b = bit32.band(rgb, 0xff0000), bit32.band(rgb, 0x00ff00),
+        bit32.band(rgb, 0x0000ff)
+      if math.floor(r/16) == math.floor(mr/16) and
+         math.floor(b/16) == math.floor(mb/16) and
+         math.floor(g/16) == math.floor(mg/16) then
+        palConv[colID] = i
+        eq = eq + 1
+        break
+      end
+    end
+    if not palConv[colID] then
+      lastSetPal = lastSetPal + 2
+      assert(lastSetPal < 256, "too many texture colors!")
+      term.setPaletteColor(lastSetPal - 1,
+        bit32.band(bit32.rshift(rgb, 1), 8355711))
+      term.setPaletteColor(lastSetPal, rgb)
+      palConv[colID] = lastSetPal
+    end
+  end
+  repeat
+    local byte = handle:read(1)
+    if byte then
+      tex[n] = palConv[string.byte(byte)]
+      n = n + 1
+    end
+  until not byte
+  handle:close()
 end
 
 -- x = forward/backward, y=left/right, z=up/down
@@ -115,9 +164,29 @@ local function castRay(x,y,dx,dy,dz,drawBuf)
   else perpWallDist = (sideDistZ - deltaDistZ) end
 
   if drawBuf then
-    local color = hit + side
-    if hit == 0xf then color = 0xf end
-    if color > 0xf then color = color - 0xf end
+    local color
+
+    local tex = textures[hit]
+    if (not tex) or #tex < texWidth*texHeight-2 then
+      color = hit + side
+      if hit == 0xf then color = 0xf end
+      if color > 0xf then color = color - 0xf end
+    else
+      local wallX, wallY
+      if side == 0 then wallX = posY + perpWallDist * rayDirY
+        else wallX = posX + perpWallDist * rayDirX end
+      wallY = posZ + perpWallDist * rayDirZ
+
+      local texX = math.floor(wallX*texWidth+0.5) -- math.floor(wallX * texWidth)
+      local texY = math.floor(wallY*texHeight)
+      if side == 0 and rayDirX > 0 then texX = texWidth - texX - 1 end
+      if side == 1 and rayDirY < 0 then texX = texWidth - texX - 1 end
+      if side == 2 and rayDirZ > 0 then texY = texWidth - texY - 1 end
+
+      local texPos = texX + texY + texHeight
+
+      color = tex[math.floor(texPos)] or math.random(1,14)
+    end
 
     for i=1, SCALE, 1 do
       drawBuf[y*SCALE+i-1] = drawBuf[y*SCALE+i-1] .. string.char(color):rep(SCALE)
@@ -131,6 +200,15 @@ local pressed = {}
 local moveZ = 0
 
 term.setGraphicsMode(2)
+
+loadTexture(1, "bluestone.tex")
+loadTexture(2, "wood.tex")
+loadTexture(3, "eagle.tex")
+loadTexture(4, "purplestone.tex")
+loadTexture(5, "redbrick.tex")
+loadTexture(6, "greystone.tex")
+loadTexture(7, "colorstone.tex")
+
 local drawBuf = {}
 local oldtime, time = 0
 local lastTimerID
